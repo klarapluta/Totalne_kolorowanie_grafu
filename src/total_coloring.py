@@ -224,4 +224,29 @@ def main():
 if __name__ == "__main__":
     main()
 
-    
+
+# Wywołanie
+# Zamień XXX na nazwę pliku, K na liczbę kolorów, a YYY na nazwę pliku, który chcesz otrzymać
+import total_coloring
+sys.argv = [
+    "total_coloring.py",
+    "XXX.txt",
+    "K",
+    "YYY.cnf"
+]
+total_coloring.main()
+
+# Sprawdzenie czy SAT czy UNSAT
+# Za YYY wpisz plik, który otzymałeś/aś w wywołaniu
+from pysat.solvers import Glucose3
+
+solver = Glucose3()
+
+with open("YYY.cnf") as f:
+    for line in f:
+        if line.startswith("p") or line.startswith("c"):
+            continue
+        clause = list(map(int, line.split()[:-1]))
+        solver.add_clause(clause)
+
+print(solver.solve())  
