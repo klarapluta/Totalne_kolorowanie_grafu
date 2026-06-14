@@ -1,0 +1,72 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{polski}
+\usepackage{graphicx} 
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{amsmath, amssymb}
+\usepackage[hidelinks]{hyperref}
+\usepackage{amsthm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\makeatletter
+\renewcommand{\ALG@name}{Algorytm}
+\makeatother
+\theoremstyle{definition} 
+\newtheorem{definition}{Definicja}[section]
+
+\title{Totalne kolorowanie grafu - Raport}
+\author{Klaudia Buczek, Klara Pluta, Gabriela Warchoł}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Opis problemu}
+Totalne kolorowanie grafu to problem polegający na przypisaniu kolorów zarówno wierzchołkom, jak i krawędziom grafu, tak aby żadne dwa sąsiednie elementy (wierzchołki lub krawędzie) nie miały tego samego koloru. Formalnie, totalne kolorowanie grafu możemy opisać przez funckję: $f: V \cup E \to \{1, 2, \ldots, k\}$, gdzie $V$ to zbiór wierzchołków, $E$ to zbiór krawędzi, a $k$ to liczba dostępnych kolorów. Ponadto muszą zachodzić następujące warunki:
+\begin{itemize}
+  \item Dla każdej krawędzi $uv \in E$ zachodzi $f(u) \neq f(v)$
+  \item DLa każdych dwóch różnych krawędzi $uv, ux \in E$ zachodzi $f(uv)\neq f(ux)$
+  \item Dla każdej krawędzi $uv \in E$ zachodzi $f(u) \neq f(uv)$ oraz $f(v) \neq f(uv)$.
+\end{itemize}
+Celem projektu jest wykorzystanie SAT-solverów do zbadania, czy dla zadanego grafu $G$ oraz parametru $k\in \mathbb{N}$ istnieje totalne kolorowanie.
+
+\section{Modelowanie formuły logicznej}
+Aby rozwiązać problem totalnego kolorowania grafu za pomocą SAT-solvera, musimy przekształcić go w formułę logiczną. W tym celu wprowadzamy zmienne logiczne, które reprezentują przypisanie kolorów do wierzchołków i krawędzi grafu.
+
+\subsection{Zmienne logiczne}
+Definiujemy zmienną $x_{a,b}$ dla każdego elementu $a \in V \cup E$ oraz każdego koloru $b \in K$ (gdzie $K$ to zbiór dostępnych kolorów). Zmienna $x_{a,b}$ przyjmuje wartość 1, jeśli element $a$ jest pokolorowany kolorem $b$, i 0 w przeciwnym przypadku.
+
+\subsection{Ograniczenia}
+Aby zapewnić poprawność totalnego kolorowania, musimy wprowadzić odpowiednie ograniczenia:
+\begin{itemize}
+  \item Każdy element (wierzchołek lub krawędź) musi być pokolorowany dokładnie jednym kolorem. To ograniczenie dzielimy na dwie części:
+  \begin{itemize}
+    \item Przynajmniej jeden kolor: $\forall a \in V \cup E \quad (x_{a,1} \lor x_{a,2} \lor \ldots \lor x_{a,k})$
+    \item Co najwyżej jeden kolor: $\forall a \in V\cup E \quad \forall b, c \in K, b < c \quad (\neg x_{a,b} \lor \neg x_{a,c})$
+  \end{itemize} 
+  \item Sąsiednie wierzchołki nie mogą mieć tego samego koloru:
+  \[
+  \forall uv \in E, b \in K \quad (\neg x_{u,b} \lor \neg x_{v,b})
+  \]
+  \item Krawędzie wychodzące z jednego wierzchołka muszą mieć różne kolory:
+  \[
+  \forall e_1, e_2 \in E: e_1 \cup e_2 \neq \emptyset \quad \forall b \in K \quad (\neg x_{e_1, b} \lor \neg x_{e_2,b})
+  \]
+  \item Krawędź i jej końce nie mogą mieć tego samego koloru:
+  \[
+  \forall uv \in E, b \in K \quad (\neg x_{u,b} \lor \neg x_{uv,b}) \land (\neg x_{v,b} \lor \neg x_{uv,b})
+  \]
+\end{itemize}
+
+\section{Implementacja}
+
+\section{Wyniki eksperymentów}
+
+\end{document}
