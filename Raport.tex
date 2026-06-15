@@ -13,6 +13,7 @@
 \usepackage{amsthm}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+\usepackage{booktabs}
 
 \makeatletter
 \renewcommand{\ALG@name}{Algorytm}
@@ -31,8 +32,8 @@
 \section{Opis problemu}
 Totalne kolorowanie grafu to problem polegający na przypisaniu kolorów zarówno wierzchołkom, jak i krawędziom grafu, tak aby żadne dwa sąsiednie elementy (wierzchołki lub krawędzie) nie miały tego samego koloru. Formalnie, totalne kolorowanie grafu możemy opisać przez funckję: $f: V \cup E \to \{1, 2, \ldots, k\}$, gdzie $V$ to zbiór wierzchołków, $E$ to zbiór krawędzi, a $k$ to liczba dostępnych kolorów. Ponadto muszą zachodzić następujące warunki:
 \begin{itemize}
-  \item Dla każdej krawędzi $uv \in E$ zachodzi $f(u) \neq f(v)$
-  \item DLa każdych dwóch różnych krawędzi $uv, ux \in E$ zachodzi $f(uv)\neq f(ux)$
+  \item Dla każdej krawędzi $uv \in E$ zachodzi $f(u) \neq f(v)$.
+  \item Dla każdych dwóch różnych krawędzi $uv, ux \in E$ zachodzi $f(uv)\neq f(ux)$.
   \item Dla każdej krawędzi $uv \in E$ zachodzi $f(u) \neq f(uv)$ oraz $f(v) \neq f(uv)$.
 \end{itemize}
 Celem projektu jest wykorzystanie SAT-solverów do zbadania, czy dla zadanego grafu $G$ oraz parametru $k\in \mathbb{N}$ istnieje totalne kolorowanie.
@@ -57,7 +58,7 @@ Aby zapewnić poprawność totalnego kolorowania, musimy wprowadzić odpowiednie
   \]
   \item Krawędzie wychodzące z jednego wierzchołka muszą mieć różne kolory:
   \[
-  \forall e_1, e_2 \in E: e_1 \cup e_2 \neq \emptyset \quad \forall b \in K \quad (\neg x_{e_1, b} \lor \neg x_{e_2,b})
+  \forall e_1, e_2 \in E: e_1 \cap e_2 \neq \emptyset \quad \forall b \in K \quad (\neg x_{e_1, b} \lor \neg x_{e_2,b})
   \]
   \item Krawędź i jej końce nie mogą mieć tego samego koloru:
   \[
@@ -66,7 +67,92 @@ Aby zapewnić poprawność totalnego kolorowania, musimy wprowadzić odpowiednie
 \end{itemize}
 
 \section{Implementacja}
+Program został podzielony na kilka modułów, z których każdy odpowiada za inną część procesu rozwiązywania problemu totalnego kolorowania grafu.
+\begin{itemize}
+  \item \texttt{total\_coloring.py} - Główny program, wczytuje plik z grafem, zmienia krawędzie, wierzchołki i kolory na zmienne logiczne oraz tworzy formułę logiczną w formacie DIMACS.
+  \item \texttt{run\_experiments.py} - Skrypt do automatycznego uruchamiania testów. Bierze po kolei grafy z folderu \texttt{examples} i sprawdza je dla coraz większej liczby kolorów, zapisując wyniki w pliku \texttt{results.txt}. Skrypt zatrzymuje się od razu, gdy solver zwróci pierwszy wynik \texttt{SAT}, dzięki temu wiemy, jaka jest minimalna liczba kolorów dla danego grafu.
+  \item \texttt{verify\_unsat.py} - Kod do wyciągania dowodów niespełnialności za pomocą solvera \texttt{CaDiCaL}. 
+  \item \texttt{check\_cnf.py} - Skrypt do sprawdzenia jednego pliku CNF przez solver \texttt{Glucose3}.
+\end{itemize}  
+\subsection{Algorytm działania pętli testowej}
+Działanie skryptu uruchamiającego eksperymenty pokazuje Algorytm \ref{alg:pętla}.
+
+\begin{algorithm}[H]
+\caption{Automatyczne testowanie grafów}\label{alg:pętla}
+\begin{algorithmic}[1]
+\Require Folder z grafami \textbf{Examples}, zakres kolorów $K\_VALUES = [2, \dots, 13]$
+\Ensure Plik z wynikami \texttt{results.csv}
+\For{graf $g \in \text{Examples}$}
+    \State Wczytaj wierzchołki $V$ i krawędzie $E$
+    \For{$k \in K\_VALUES$}
+        \State Wygeneruj formułę CNF dla parametrów $(G, k)$
+        \State Uruchom SAT-solver
+        \State Zapisz wyniki (liczbę zmiennych, klauzul i wynik SAT/UNSAT)
+        \If{$result == \text{"SAT"}$}
+            \State \textbf{break} \Comment{Mamy wynik, nie liczymy dla większych $k$}
+        \EndIf
+    \EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
 \section{Wyniki eksperymentów}
+Przetestowałyśmy nasz model na wielu różnych rodzajach grafów (ścieżki, cykle, grafy pełne, dwudzielne, koła, gwiazdy oraz graf Petersena). 
+
+\subsection{Minimalna liczba kolorów}
+W tabeli \ref{tab:kolory} widać, przy jakiej najmniejszej liczbie kolorów $k$ solver był w stanie znaleźć poprawne totalne kolorowanie (czyli dał wynik \texttt{SAT}).
+
+\begin{table}[H]
+\centering
+\caption{Wyniki minimalnego $k$ dla badanych grafów}\label{tab:kolory}
+\begin{tabular}{lc|lc}
+\toprule
+Graf & Minimalne $k$ & Graf & Minimalne $k$ \\
+\midrule
+P4 & 3 & C10 & 4 \\
+P6 & 3 & diamond & 4 \\
+P8 & 3 & Q3 & 4 \\
+P10 & 3 & K3,3 & 5 \\
+C6 & 3 & K4 & 5 \\
+C4 & 4 & K5 & 5 \\
+C8 & 4 & K4,4 & 6 \\
+W5 & 6 & Petersen & 6 \\
+S5 & 6 & K5,5 & 7 \\
+W7 & 8 & K6 & 7 \\
+S8 & 9 & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Wszystkie wyniki zgadzają się z teorią grafów. Im graf ma więcej krawędzi i im więcej z nich schodzi się w jednym wierzchołku, tym więcej kolorów potrzebuje solver, żeby spełnić wszystkie warunki.
+
+\subsection{Rozmiar wygenerowanych plików CNF}
+Liczba zmiennych w formule zawsze zależy tylko od rozmiaru grafu i liczby kolorów, co idealnie potwierdza wzór:
+\[
+\text{Liczba zmiennych} = (|V| + |E|) \cdot k
+\]
+Dużo ciekawsza jest liczba klauzul, czyli ograniczeń. Jest ona uzależniona od stopnia wierzchołków. Tabela \ref{tab:rozmiary} pokazuje największe formuły uzyskane w testach.
+
+\begin{table}[H]
+\centering
+\caption{Największe formuły uzyskane w testach}\label{tab:rozmiary}
+\begin{tabular}{lcccc}
+\toprule
+Graf & $k$ & Zmienne & Klauzule & Wynik \\
+\midrule
+K5,5 & 7 & 245 & 1995 & SAT \\
+W7 & 8 & 176 & 1310 & SAT \\
+K6 & 7 & 147 & 1197 & SAT \\
+S8 & 9 & 153 & 1097 & SAT \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Gdy graf ma dużo krawędzi, liczba klauzul drastycznie rośnie. Dla prostej ścieżki $P_{10}$ program wygenerował tylko 181 klauzul, a dla grafu pełnego $K_6$ o podobnej liczbie elementów (wierzchołków i krawędzi) wyszło ich aż 1197. 
+
+\subsection{Weryfikacja przypadków UNSAT i DRAT}
+W projekcie spróbowałyśmy uruchomić pełną weryfikację za pomocą programu \texttt{drat-trim}. Udało nam się go skompilować i przygotować całe środowisko. Pojawił się jednak problem techniczny: biblioteka \texttt{PySAT}, której używamy w Pythonie do obsługi solverów, nie potrafiła wygenerować poprawnych, niepustych plików z dowodami (\textit{proofs}).
+
+Z tego powodu nie mogłyśmy w pełni domknąć automatycznej weryfikacji przez \texttt{drat-trim}. Wszystkie przypadki \texttt{UNSAT} (gdy kolorów było za mało) zweryfikowałyśmy jednak bezpośrednio w solverze \texttt{Glucose3}. Każdy test dla mniejszego $k$ kończył się twardym wynikiem \texttt{UNSAT}, co udowadnia, że generator działa poprawnie i nie przepuszcza błędnych kolorowań.
 
 \end{document}
