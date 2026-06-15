@@ -8,26 +8,26 @@ Dla zadanego grafu i liczby kolorów k generowana jest formuła CNF w formacie D
 
 ## Struktura repozytorium
 
-src/
+src
 
-* total\_coloring.py – generator formuł CNF
+* total\_coloring.py - generator formuł CNF
 
-examples/
+examples
 
 * grafy testowe
 
-scripts/
+scripts
 
-* check\_cnf.py – sprawdzanie SAT/UNSAT
-* run\_experiments.py – automatyczne eksperymenty
-* verify\_unsat.py – próby weryfikacji UNSAT
+* check\_cnf.py - sprawdzanie SAT/UNSAT
+* run\_experiments.py - automatyczne eksperymenty
+* verify\_unsat.py - próby weryfikacji UNSAT
 
-results/
+results
 
-* results.csv – wyniki eksperymentów
-* analysis.md – analiza wyników
+* results.csv - wyniki eksperymentów
+* analysis.md - analiza wyników
 
-tools/
+tools
 
 * drat-trim
 
@@ -45,19 +45,23 @@ Uruchomienie eksperymentów:
 
 python scripts/run\_experiments.py
 
+## Eksperymenty
+
+W ramach projektu przeprowadzono eksperymenty dla różnych rodzin grafów, m.in. ścieżek, cykli, grafów pełnych, grafów dwudzielnych pełnych, gwiazd, kół, grafu Petersena oraz grafu kostki Q3.
+
+Dla każdego grafu testowano kolejne wartości liczby kolorów k. Dla każdej pary (G, k) generowano formułę CNF, uruchamiano solver SAT oraz zapisywano liczbę zmiennych, liczbę klauzul i wynik SAT/UNSAT.
+
+Pozwoliło to wyznaczyć minimalną liczbę kolorów dla badanych grafów oraz przeanalizować rozmiary generowanych instancji SAT.
+
 ## Wyniki
 
-Wyniki eksperymentów znajdują się w:
+Tabela wyników eksperymentów znajduje się w pliku: results/results.csv
 
-results/results.csv
+Szczegółowa analiza otrzymanych wyników znajduje się w pliku: results/analysis.md
 
-Analiza wyników znajduje się w:
+### Autorzy
 
-results/analysis.md
-
-Autorzy 
 Klaudia Buczek  
 Klara Pluta
-
 Gabriela Warchoł
 
