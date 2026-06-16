@@ -4,16 +4,20 @@ from pathlib import Path
 from pysat.formula import CNF
 from pysat.solvers import Glucose3
 
-
+# Ścieżki do katalogów i plików
 ROOT_DIR = Path(__file__).resolve().parents[1]
 EXAMPLES_DIR = ROOT_DIR / "examples"
 CNF_DIR = ROOT_DIR / "results" / "cnf"
 RESULTS_FILE = ROOT_DIR / "results" / "results.csv"
-
+# Zakres wartości k do testowaniażeby znaleźć pierwszą wartość dającą SAT
+# Zakres do 13 wystarcza dla głównych grafów testowych użytych w eksperymentach
 K_VALUES = list(range(2, 14))
+# Maksymalny czas oczekiwania na rozwiązanie problemu SAT w sekundach
 TIMEOUT_SECONDS = 30
 
-
+# Skrypt eksperymentalny korzysta z tego samego kodowania CNF co generator w src/total_coloring.py
+# Funkcje wczytywania grafu i generowania CNF są tutaj powtórzone celowo, aby eksperymenty można było uruchamiać automatycznie
+# dla wielu grafów i wartości k bez ręcznej zmiany argumentów programu
 def read_graph(filename):
     vertices = set()
     edges = []
@@ -47,13 +51,13 @@ def generate_total_coloring_cnf(vertices, edges, k):
     clauses = []
 
     objects = []
-
+    # Kolorujemy wszystkie obiekty grafu: wierzchołki i krawędzie
     for v in vertices:
         objects.append(v)
 
     for e in edges:
         objects.append(e)
-
+    # Zmienna oznacza, że dany obiekt ma kolor
     var = {}
     next_var = 1
 
@@ -61,10 +65,10 @@ def generate_total_coloring_cnf(vertices, edges, k):
         for color in range(1, k + 1):
             var[(obj, color)] = next_var
             next_var += 1
-
+    # Każdy obiekt musi mieć co najmniej jeden kolor
     for obj in objects:
         clauses.append([var[(obj, color)] for color in range(1, k + 1)])
-
+    # Każdy obiekt może mieć co najwyżej jeden kolor
     for obj in objects:
         for c1 in range(1, k + 1):
             for c2 in range(c1 + 1, k + 1):
@@ -72,7 +76,7 @@ def generate_total_coloring_cnf(vertices, edges, k):
                     -var[(obj, c1)],
                     -var[(obj, c2)]
                 ])
-
+    # Końce każdej krawędzi muszą mieć różne kolory
     for (u, v) in edges:
         for color in range(1, k + 1):
             clauses.append([
@@ -81,7 +85,7 @@ def generate_total_coloring_cnf(vertices, edges, k):
             ])
 
     m = len(edges)
-
+    # Krawędzie incydentne (mające wspólny wierzchołek) muszą mieć różne kolory
     for i in range(m):
         e1 = edges[i]
 
@@ -94,7 +98,7 @@ def generate_total_coloring_cnf(vertices, edges, k):
                         -var[(e1, color)],
                         -var[(e2, color)]
                     ])
-
+    # Krawędzie muszą mieć różne kolory od swoich końców
     for (u, v) in edges:
         e = (u, v)
 
@@ -113,6 +117,7 @@ def generate_total_coloring_cnf(vertices, edges, k):
 
 
 def save_dimacs(filename, clauses, num_vars):
+    # Zapisanie formuły w standardowym formacie DIMACS CNF
     with open(filename, "w", encoding="utf-8") as f:
         f.write(f"p cnf {num_vars} {len(clauses)}\n")
 
@@ -125,6 +130,8 @@ def solve_cnf(cnf_path):
     formula = CNF(from_file=str(cnf_path))
 
     with Glucose3(bootstrap_with=formula.clauses) as solver:
+        # PySAT używa budżetu konfliktów, a nie klasycznego imitu czasu
+        # Stała TIMEOUT_SECONDS pełni rolę ograniczenia
         solver.conf_budget(TIMEOUT_SECONDS * 100000)
 
         result = solver.solve_limited(expect_interrupt=True)
@@ -158,6 +165,7 @@ def run_single_experiment(graph_path, k):
 
     solver_result = solve_cnf(cnf_path)
 
+    #jeden wiersz odpowiada jednej parze (graf, k)
     return {
         "graph": graph_name,
         "vertices": len(vertices),
@@ -189,10 +197,12 @@ def main():
                 f"clauses={row['clauses']}"
             )
 
+            # Po pierwszym SAT znamy minimalne k dla danego grafu w badanym zakresie i nie testujemy większych wartości
             if row["solver_result"] == "SAT":
                 print(f"  First SAT found for {graph_path.name}: k={k}")
                 break
 
+    # Wyniki zapisujemy do pliku CSV
     with open(RESULTS_FILE, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
